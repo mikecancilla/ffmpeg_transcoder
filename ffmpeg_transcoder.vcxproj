@@ -176,6 +176,7 @@
     <ClCompile Include="ffmpeg_transcoder.cpp" />
     <ClCompile Include="filters.cpp" />
     <ClCompile Include="fr_conversion.cpp" />
+    <ClCompile Include="tests\ffmpeg_decode.cpp" />
     <ClCompile Include="utils.cpp" />
     <ClCompile Include="write_frame.cpp" />
   </ItemGroup>

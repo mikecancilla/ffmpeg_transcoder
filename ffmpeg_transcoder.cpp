@@ -117,6 +117,8 @@ extern "C"
 // Write frame to disk helper
 #include "write_frame.h"
 
+extern bool DoDecodeTest(const char *filename);
+
 // Types
 ////////
 
@@ -1099,6 +1101,12 @@ static void parse_params(int argc, char **argv)
 
 int main(int argc, char **argv)
 {
+    if(1)
+    {
+        DoDecodeTest("F:\\streams\\mpeg1\\1.mpg");
+        return 0;
+    }
+
     int ret;
 
     if (argc < 2)
