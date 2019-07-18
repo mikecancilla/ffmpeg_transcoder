@@ -91,8 +91,9 @@ extern "C"
 #define AUDIO_ELEMENTARY_EXT _T(".aac")
 
 #include <pthread.h>
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
+#include <cstdio>
 #include <map>
 #include <vector>
 #include <string>
@@ -510,8 +511,8 @@ static int open_output_files()
             dec_ctx->codec_type == AVMEDIA_TYPE_AUDIO)
         {
             if(dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
-                encoder = avcodec_find_encoder(AV_CODEC_ID_H264);
-                //encoder = avcodec_find_encoder_by_name("libx264");
+                //encoder = avcodec_find_encoder(AV_CODEC_ID_H264);
+                encoder = avcodec_find_encoder_by_name("libx264");
                 //encoder = avcodec_find_encoder_by_name("libvpx");
                 //encoder = avcodec_find_encoder_by_name("jpeg2000");
                 //encoder = avcodec_find_encoder(AV_CODEC_ID_WMV2);
@@ -539,6 +540,8 @@ static int open_output_files()
             * streams easily using filters */
             if (dec_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
             {
+                enc_ctx->bit_rate = dec_ctx->bit_rate;
+
                 // TODO: Just use src WxH or use command line?
                 enc_ctx->width = dec_ctx->width;
                 enc_ctx->height = dec_ctx->height;
@@ -566,7 +569,12 @@ static int open_output_files()
                 }
 
                 // For now, just pass-thru framerate
-                enc_ctx->time_base = av_inv_q(g_options.frame_rate);
+                //enc_ctx->time_base = av_inv_q(g_options.frame_rate);
+                enc_ctx->time_base = av_inv_q(dec_ctx->framerate);
+                enc_ctx->framerate = dec_ctx->framerate;
+
+                enc_ctx->gop_size = 10;
+                enc_ctx->max_b_frames = 1;
 
                 outFileName = g_options.video_elementary_file;
             }
@@ -993,6 +1001,14 @@ static int flush_encoder(unsigned int stream_index)
     return ret;
 }
 
+#ifdef WINDOWS
+    #include <direct.h>
+    #define GetCurrentDir _getcwd
+#else
+    #include <unistd.h>
+    #define GetCurrentDir getcwd
+#endif
+
 static void parse_params(int argc, char **argv)
 {
     g_options.mux = false;
@@ -1001,6 +1017,22 @@ static void parse_params(int argc, char **argv)
     g_options.avisynth = false;
     g_options.frame_rate.num = 0;
     g_options.frame_rate.den = 0;
+
+     char cCurrentPath[FILENAME_MAX];
+
+     if (!GetCurrentDir(cCurrentPath, sizeof(cCurrentPath)))
+         return;
+
+    cCurrentPath[sizeof(cCurrentPath) - 1] = '\0'; /* not really required */
+
+    printf ("The current working directory is %s", cCurrentPath);
+
+#ifdef WINDOWS
+    g_options.video_elementary_file = cCurrentPath;
+    g_options.video_elementary_file += "\\video_out.mp4";
+    g_options.audio_elementary_file = cCurrentPath;
+    g_options.audio_elementary_file += "\\audio_out.mp4";
+#endif
 
     for(int i=1; i<argc; i++)
     {
